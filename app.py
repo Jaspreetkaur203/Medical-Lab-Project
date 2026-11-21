@@ -9,12 +9,26 @@ app.secret_key = "medilab_secret_key"
 
 # Developer: Jaspreet Kaur
 
-# Load ML Model
+# Load trained ML model
 with open("medical_lab_model.pkl", "rb") as file:
     model = pickle.load(file)
 
+# Exact feature columns from your trained model
+FEATURES = [
+    "age",
+    "sex_Male",
+    "department_General Medicine",
+    "department_Neurology",
+    "department_Orthopedics",
+    "department_Pediatrics"
+]
 
-# Create contact database
+# Verify model columns
+if list(model.feature_names_in_) != FEATURES:
+    raise ValueError("Model features do not match app.py")
+
+
+# Contact database
 def create_database():
     conn = sqlite3.connect("messages.db")
     cursor = conn.cursor()
@@ -40,39 +54,60 @@ create_database()
 def home():
 
     prediction = None
+    submitted = None
 
     if request.method == "POST":
         try:
-            age = int(request.form["age"])
-            sex = request.form["sex"]
-            department = request.form["department"]
+            age = int(request.form.get("age", ""))
+            sex = request.form.get("sex", "")
+            department = request.form.get("department", "")
 
+            if not 1 <= age <= 120:
+                raise ValueError("Enter age between 1 and 120.")
+
+            if sex not in ["Female", "Male"]:
+                raise ValueError("Please select a valid gender.")
+
+            departments = [
+                "General Medicine",
+                "Neurology",
+                "Orthopedics",
+                "Pediatrics"
+            ]
+
+            if department not in departments:
+                raise ValueError("Please select a valid department.")
+
+            # Manual encoding matching the trained model
             input_data = pd.DataFrame([{
+                "age": age,
+                "sex_Male": 1 if sex == "Male" else 0,
+                "department_General Medicine": 1 if department == "General Medicine" else 0,
+                "department_Neurology": 1 if department == "Neurology" else 0,
+                "department_Orthopedics": 1 if department == "Orthopedics" else 0,
+                "department_Pediatrics": 1 if department == "Pediatrics" else 0
+            }], columns=FEATURES)
+
+            # ML prediction
+            prediction = model.predict(input_data)[0]
+
+            submitted = {
                 "age": age,
                 "sex": sex,
                 "department": department
-            }])
+            }
 
-            input_data = pd.get_dummies(
-                input_data,
-                columns=["sex", "department"],
-                drop_first=True,
-                dtype=int
-            )
-
-            input_data = input_data.reindex(
-                columns=model.feature_names_in_,
-                fill_value=0
-            )
-
-            prediction = model.predict(input_data)[0]
+        except ValueError as error:
+            flash(str(error), "error")
 
         except Exception:
-            flash("Prediction failed. Please check your details.", "error")
+            app.logger.exception("Prediction error")
+            flash("Prediction failed. Please try again.", "error")
 
     return render_template(
         "index.html",
-        prediction=prediction
+        prediction=prediction,
+        submitted=submitted
     )
 
 
