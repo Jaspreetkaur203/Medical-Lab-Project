@@ -123,7 +123,7 @@ nav {
     line-height: 1.7;
 }
 
-/* PREDICTION FORM */
+/* PREDICTION */
 
 .prediction-card {
     max-width: 550px;
@@ -163,11 +163,21 @@ input:focus, select:focus, textarea:focus {
 
 .result {
     margin-top: 22px;
-    padding: 20px;
+    padding: 25px;
     background: #e4f4ec;
     color: #176b46;
     border-radius: 8px;
     text-align: center;
+}
+
+.result h3 {
+    margin-bottom: 10px;
+}
+
+.result h2 {
+    font-size: 30px;
+    color: #176b46;
+    margin-top: 8px;
 }
 
 .alert {
@@ -188,6 +198,18 @@ input:focus, select:focus, textarea:focus {
     color: #a12828;
 }
 
+/* ABOUT */
+
+.about-box {
+    max-width: 850px;
+    margin: auto;
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    line-height: 1.8;
+    color: #64748b;
+}
+
 /* CONTACT */
 
 .contact-section {
@@ -205,6 +227,10 @@ input:focus, select:focus, textarea:focus {
     max-width: 500px;
     margin: auto;
     text-align: left;
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px #1e3c6410;
 }
 
 .contact-card textarea {
@@ -347,6 +373,13 @@ footer p, footer a {
         demonstrating laboratory test panel prediction.
     </p>
 
+    <div class="about-box">
+        MediLab is a machine learning demonstration project
+        that connects a trained classification model with
+        a Flask web application. Users can enter basic details
+        and view the model's predicted test panel category.
+    </div>
+
 </section>
 
 <!-- PREDICTION -->
@@ -356,33 +389,78 @@ footer p, footer a {
     <h2>Laboratory Prediction</h2>
 
     <p class="subtitle">
-        Enter details to generate a model prediction.
+        Enter your details below to generate a model prediction.
     </p>
+
+    <!-- ERROR MESSAGES -->
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert {{ category }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endwith %}
 
     <div class="prediction-card">
 
         <form method="POST" action="/">
 
             <label>Patient Age</label>
+
             <input type="number"
                    name="age"
                    min="1"
                    max="120"
                    placeholder="Enter age"
+                   value="{{ submitted.age if submitted else '' }}"
                    required>
 
             <label>Gender</label>
+
             <select name="sex" required>
+
                 <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
+
+                <option value="Male"
+                    {% if submitted and submitted.sex == 'Male' %}selected{% endif %}>
+                    Male
+                </option>
+
+                <option value="Female"
+                    {% if submitted and submitted.sex == 'Female' %}selected{% endif %}>
+                    Female
+                </option>
+
             </select>
 
             <label>Department</label>
-            <input type="text"
-                   name="department"
-                   placeholder="Enter exact department name"
-                   required>
+
+            <select name="department" required>
+
+                <option value="">Select Department</option>
+
+                <option value="General Medicine"
+                    {% if submitted and submitted.department == 'General Medicine' %}selected{% endif %}>
+                    General Medicine
+                </option>
+
+                <option value="Neurology"
+                    {% if submitted and submitted.department == 'Neurology' %}selected{% endif %}>
+                    Neurology
+                </option>
+
+                <option value="Orthopedics"
+                    {% if submitted and submitted.department == 'Orthopedics' %}selected{% endif %}>
+                    Orthopedics
+                </option>
+
+                <option value="Pediatrics"
+                    {% if submitted and submitted.department == 'Pediatrics' %}selected{% endif %}>
+                    Pediatrics
+                </option>
+
+            </select>
 
             <button type="submit" class="primary-btn">
                 Generate Prediction
@@ -390,12 +468,26 @@ footer p, footer a {
 
         </form>
 
+        <!-- MODEL PREDICTION RESULT -->
+
         {% if prediction %}
+
         <div class="result">
-            <h3>Prediction Result</h3>
-            <p>{{ prediction }}</p>
+
+            <h3>Prediction Generated Successfully!</h3>
+
+            <p>Predicted Test Panel</p>
+
+            <h2>{{ prediction }}</h2>
+
         </div>
+
         {% endif %}
+
+        <p style="font-size:12px; color:#64748b; margin-top:18px; text-align:center;">
+            Educational ML demonstration only. This result is
+            not a medical diagnosis or a recommendation for clinical testing.
+        </p>
 
     </div>
 
@@ -422,24 +514,27 @@ footer p, footer a {
     <form class="contact-card" method="POST" action="/contact">
 
         <label>Name</label>
+
         <input type="text"
                name="name"
                placeholder="Your full name"
                required>
 
         <label>Email</label>
+
         <input type="email"
                name="email"
                placeholder="you@example.com"
                required>
 
         <label>Message</label>
+
         <textarea name="message"
                   placeholder="Your message..."
                   required></textarea>
 
         <button type="submit" class="primary-btn">
-            Send message
+            Send Message
         </button>
 
     </form>
